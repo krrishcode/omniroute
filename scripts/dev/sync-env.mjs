@@ -30,11 +30,19 @@ import { fileURLToPath } from "node:url";
  */
 function resolveRootDir(rootDir) {
   if (rootDir) return rootDir;
+  let dir;
   try {
-    return dirname(dirname(fileURLToPath(import.meta.url)));
+    dir = dirname(fileURLToPath(import.meta.url));
   } catch {
-    return process.cwd();
+    dir = process.cwd();
   }
+  while (dir && dir !== dirname(dir)) {
+    if (existsSync(join(dir, ".env.example")) || existsSync(join(dir, "package.json"))) {
+      return dir;
+    }
+    dir = dirname(dir);
+  }
+  return process.cwd();
 }
 
 const CRYPTO_SECRETS = {
