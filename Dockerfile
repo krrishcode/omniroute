@@ -122,6 +122,10 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-npm-cache,targe
 ARG OMNIROUTE_USE_TURBOPACK=0
 ENV OMNIROUTE_USE_TURBOPACK="${OMNIROUTE_USE_TURBOPACK}"
 
+# Backend-only ultra-lightweight build (skips heavy UI, compiles router/API only in ~30s)
+ARG OMNIROUTE_BUILD_BACKEND_ONLY=1
+ENV OMNIROUTE_BUILD_BACKEND_ONLY="${OMNIROUTE_BUILD_BACKEND_ONLY}"
+
 # Next.js basePath is fixed at build time; pass OMNIROUTE_BASE_PATH here when the
 # image should serve under a reverse-proxy subpath without a runtime patch.
 ARG OMNIROUTE_BASE_PATH=""
@@ -144,16 +148,8 @@ ENV DASHBOARD_ALLOW_EMBED=$DASHBOARD_ALLOW_EMBED
 # Docker-only: npm/Electron/VPS builds must bundle the REAL manager (#6344).
 ENV OMNIROUTE_MITM_STUB=1
 
-# Raise the V8 heap ceiling for the build. The webpack production optimization
-# pass needs more than V8's default ceiling (~2 GB) for a codebase this size; a
-# memory-constrained Docker build otherwise dies with "FATAL ERROR: ... JavaScript
-# heap out of memory" during the builder stage (#4076). Turbopack's compile is
-# native (Rust) and less V8-heap-bound, but the prerender/export phase still runs
-# on V8, so keep the ceiling. NODE_OPTIONS propagates to the spawned `next build`
-# child (build-next-isolated.mjs → resolveNextBuildEnv spreads process.env).
-# Build-only; the runtime heap is set separately on the runner stage
-# (OMNIROUTE_MEMORY_MB). Override: `--build-arg OMNIROUTE_BUILD_MEMORY_MB=6144`.
-ARG OMNIROUTE_BUILD_MEMORY_MB=4096
+# Raise the V8 heap ceiling for the build.
+ARG OMNIROUTE_BUILD_MEMORY_MB=2048
 ENV NODE_OPTIONS="--max-old-space-size=${OMNIROUTE_BUILD_MEMORY_MB}"
 
 COPY . ./
@@ -175,13 +171,8 @@ LABEL org.opencontainers.image.title="omniroute" \
 ENV NODE_ENV=production
 ENV PORT=20128
 ENV HOSTNAME=0.0.0.0
-# Runtime heap ceiling. 1024MB is enough for normal traffic but can be tight
-# for large fusion-combo panels (many models fanned out in parallel, each
-# response buffered in full — see open-sse/services/fusion.ts::FUSION_DEFAULTS
-# .maxPanel, issue #1905). Override at `docker run` time with
-# `-e OMNIROUTE_MEMORY_MB=2048` (or higher) if you raise fusionTuning.maxPanel
-# above the default cap.
-ENV OMNIROUTE_MEMORY_MB=1024
+# Lightweight runtime heap ceiling: 256MB is plenty for backend-only routing
+ENV OMNIROUTE_MEMORY_MB=256
 ENV NODE_OPTIONS="--max-old-space-size=${OMNIROUTE_MEMORY_MB}"
 
 # Data directory inside Docker — must match the volume mount in docker-compose.yml
