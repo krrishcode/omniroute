@@ -118,13 +118,15 @@ RUN --mount=type=cache,id=s/92ca8a61-c1ba-421f-a389-d48ac7258c2d-npm-cache,targe
   && (test -n "$(find node_modules/tls-client-node/bin -mindepth 1 -print -quit 2>/dev/null)" \
       || (echo "tls-client-node native binary missing after postinstall — GitHub API fetch likely rate-limited or failed (#7802)" >&2 && exit 1))
 
-# Build with Webpack/Turbopack. Webpack (0) is more stable across memory-constrained VPS/Docker builds.
-ARG OMNIROUTE_USE_TURBOPACK=0
+# Build with Turbopack (Next.js 16 native Rust compiler — fast and low memory)
+ARG OMNIROUTE_USE_TURBOPACK=1
 ENV OMNIROUTE_USE_TURBOPACK="${OMNIROUTE_USE_TURBOPACK}"
 
 # Backend-only ultra-lightweight build (skips heavy UI, compiles router/API only in ~30s)
 ARG OMNIROUTE_BUILD_BACKEND_ONLY=1
 ENV OMNIROUTE_BUILD_BACKEND_ONLY="${OMNIROUTE_BUILD_BACKEND_ONLY}"
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_DISABLE_SOURCEMAPS=1
 
 # Next.js basePath is fixed at build time; pass OMNIROUTE_BASE_PATH here when the
 # image should serve under a reverse-proxy subpath without a runtime patch.
