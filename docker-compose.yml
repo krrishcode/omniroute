@@ -75,8 +75,8 @@ services:
       timeout: 5s
       retries: 3
 
-  # ── Profile: base (minimal, no CLI tools) ──────────────────────────
-  omniroute-base:
+  # ── Primary Application Service (lightweight backend) ───────────
+  omniroute:
     <<: *common
     container_name: omniroute
     build:
@@ -84,13 +84,11 @@ services:
       target: runner-base
       args:
         OMNIROUTE_BASE_PATH: ${OMNIROUTE_BASE_PATH:-}
-    image: omniroute:base
+    image: omniroute:latest
     ports:
       - "${DASHBOARD_PORT:-20128}:${DASHBOARD_PORT:-20128}"
       - "${API_PORT:-20129}:${API_PORT:-20129}"
       - "${LIVE_WS_PORT:-20132}:${LIVE_WS_PORT:-20132}"
-    profiles:
-      - base
 
   # ── Profile: web (runner-web + Chromium/Playwright) ────────────────
   # Required for web-cookie providers (gemini-web, claude-web, claude-turnstile).
