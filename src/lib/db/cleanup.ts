@@ -358,6 +358,11 @@ export async function cleanupCompressionRunTelemetry(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
+    const tableExists = db
+      .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='compression_run_telemetry'")
+      .get();
+    if (!tableExists) return result;
+
     const stmt = db.prepare("DELETE FROM compression_run_telemetry WHERE timestamp < ?");
     const runResult = stmt.run(cutoffEpoch);
     result.deleted = runResult.changes;
